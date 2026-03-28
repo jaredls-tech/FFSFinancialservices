@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#00A651"/>
+<title>TD Financial Quest</title>
+<style>
+:root{
+  --green:#00A651;--dgreen:#006B3F;--lgreen:#E8F5EE;
+  --yellow:#FFB300;--red:#E53935;--blue:#1565C0;
+  --dark:#111;--card:#fff;--bg:#f0f7f3;--muted:#888;
+  --r:18px;--rs:10px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);overflow:hidden;overscroll-behavior:none}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg);overflow:hidden;transition:opacity .25s}
+.screen.active{display:flex}
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:calc(80px + var(--safe-bot))}
+
+/* ── STATUS BAR SPACER ── */
+.status-space{height:calc(44px + var(--safe-top));background:var(--dgreen);flex-shrink:0}
+
+/* ── TOP NAV ── */
+.top-nav{background:linear-gradient(135deg,var(--dgreen),var(--green));padding:0 16px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-nav-title{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.3px}
+.top-nav-logo{width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:var(--green)}
+.top-nav-stats{display:flex;gap:8px}
+.top-stat{background:rgba(255,255,255,.18);padding:5px 10px;border-radius:20px;color:#fff;font-size:12px;font-weight:700}
+
+/* ── BOTTOM TAB BAR ── */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:calc(64px + var(--safe-bot));background:#fff;border-top:1px solid #e8e8e8;display:flex;align-items:flex-start;padding-top:8px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:0;color:var(--muted);transition:color .15s}
+.tab-btn.active{color:var(--green)}
+.tab-icon{font-size:22px;line-height:1}
+.tab-label{font-size:10px;font-weight:700;letter-spacing:.2px}
+
+/* ── BUTTONS ── */
+.btn{background:linear-gradient(135deg,var(--green),var(--dgreen));color:#fff;border:none;padding:16px 32px;border-radius:50px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,107,63,.35);width:100%;transition:transform .1s,opacity .1s}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn-sm{padding:10px 20px;font-size:14px;width:auto}
+.btn-outline{background:none;border:2px solid var(--green);color:var(--green);box-shadow:none}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--r);box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden}
+.card-pad{padding:18px}
+
+/* ── SPLASH ── */
+#screen-splash{background:linear-gradient(160deg,var(--dgreen) 0%,var(--green) 55%,#00d46a 100%);align-items:center;justify-content:center}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:22px;padding:40px 24px;text-align:center}
+.splash-logo{width:96px;height:96px;background:#fff;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:var(--green);box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.splash-title{font-size:52px;font-weight:900;color:#fff;line-height:1;letter-spacing:-2px}
+.splash-title span{color:var(--yellow)}
+.splash-sub{color:rgba(255,255,255,.8);font-size:16px;letter-spacing:1px;text-transform:uppercase}
+.splash-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.splash-tag{background:rgba(255,255,255,.18);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.25)}
+.float-coins{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.coin{position:absolute;font-size:24px;animation:fall linear infinite;opacity:.15}
+@keyframes fall{from{transform:translateY(-60px)}to{transform:translateY(110vh)}}
+</style>
+</head>
+<body>
+<style>
+/* ── HOME ── */
+.home-hero{background:linear-gradient(135deg,var(--dgreen),var(--green));margin:16px;border-radius:var(--r);padding:20px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 20px rgba(0,107,63,.3)}
+.home-hero-emoji{font-size:48px;flex-shrink:0}
+.home-hero h2{color:#fff;font-size:18px;font-weight:800;margin-bottom:4px}
+.home-hero p{color:rgba(255,255,255,.8);font-size:13px;line-height:1.4}
+.section-title{font-size:17px;font-weight:800;color:var(--dark);padding:16px 16px 10px}
+.game-list{display:flex;flex-direction:column;gap:12px;padding:0 16px}
+.game-row{background:#fff;border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);cursor:pointer;transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden;border:2px solid transparent}
+.game-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--green))}
+.game-row:active{transform:scale(.98);box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.game-row-icon{font-size:40px;flex-shrink:0;width:52px;text-align:center}
+.game-row-info{flex:1}
+.game-row-info h3{font-size:16px;font-weight:700;color:var(--dark);margin-bottom:2px}
+.game-row-info p{font-size:12px;color:var(--muted);line-height:1.4}
+.game-row-badge{background:var(--lgreen);color:var(--dgreen);font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.8px;margin-top:5px;display:inline-block}
+.game-row-arrow{font-size:20px;color:#ccc;flex-shrink:0}
+.xp-bar-wrap{margin:0 16px 16px;background:#e8e8e8;border-radius:6px;height:8px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--dgreen));border-radius:6px;transition:width .5s ease;width:0%}
+.level-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px 6px;font-size:12px;color:var(--muted);font-weight:600}
+
+/* ── GAME HEADER ── */
+.game-top{background:linear-gradient(135deg,var(--dgreen),var(--green));padding:calc(var(--safe-top) + 12px) 16px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back-btn{width:38px;height:38px;background:rgba(255,255,255,.2);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.game-top-title{color:#fff;font-size:17px;font-weight:800;flex:1}
+.game-top-score{display:flex;gap:10px}
+.gscore{background:rgba(255,255,255,.18);padding:5px 10px;border-radius:16px;color:#fff;font-size:12px;font-weight:700}
+
+/* ── RUNNER ── */
+#screen-runner{background:#1a1a2e}
+#runner-canvas{width:100%;flex:1;display:block;touch-action:none}
+.runner-overlay{position:absolute;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10;backdrop-filter:blur(8px)}
+.runner-overlay.gone{display:none}
+.runner-card{background:#fff;border-radius:var(--r);padding:28px 22px;width:88%;max-width:340px;text-align:center}
+.runner-card h2{font-size:24px;font-weight:800;color:var(--dark);margin-bottom:8px}
+.runner-card p{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px}
+.tip-card{background:var(--lgreen);border-left:4px solid var(--green);padding:12px 14px;border-radius:var(--rs);font-size:13px;color:var(--dgreen);margin-bottom:18px;text-align:left}
+.jump-fab{position:absolute;bottom:calc(24px + var(--safe-bot));right:20px;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--dgreen));color:#fff;font-size:13px;font-weight:800;border:3px solid rgba(255,255,255,.3);cursor:pointer;box-shadow:0 6px 24px rgba(0,166,81,.5);z-index:5;letter-spacing:.5px}
+.jump-fab:active{transform:scale(.92)}
+
+/* ── QUIZ ── */
+#screen-quiz{background:#f0f8f4}
+.quiz-body{padding:20px 16px 100px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.quiz-char{font-size:72px;animation:bob 1.2s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.quiz-bubble{background:#fff;border-radius:20px;padding:18px 20px;width:100%;box-shadow:0 2px 16px rgba(0,0,0,.08);border:2px solid var(--lgreen);position:relative}
+.quiz-bubble::before{content:'';position:absolute;top:-12px;left:50%;transform:translateX(-50%);border:12px solid transparent;border-bottom-color:#fff;border-top:none}
+.quiz-q{font-size:17px;font-weight:600;color:var(--dark);line-height:1.5;text-align:center}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.quiz-opt{background:#fff;border:2px solid #e0e0e0;border-radius:var(--r);padding:16px 10px;font-size:14px;font-weight:600;color:var(--dark);cursor:pointer;transition:all .15s;text-align:center;line-height:1.3}
+.quiz-opt:active{transform:scale(.97)}
+.quiz-opt.ok{background:var(--lgreen);border-color:var(--green);color:var(--dgreen)}
+.quiz-opt.no{background:#FFEBEE;border-color:var(--red);color:var(--red)}
+.quiz-fb{background:#fff;border-radius:var(--r);padding:14px 16px;width:100%;font-size:14px;line-height:1.6;box-shadow:0 2px 12px rgba(0,0,0,.07);display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.ok-fb{border-left:4px solid var(--green);color:var(--dgreen)}
+.quiz-fb.no-fb{border-left:4px solid var(--red);color:var(--red)}
+.qprog-wrap{width:100%;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.qprog{height:100%;background:linear-gradient(90deg,var(--green),var(--dgreen));border-radius:4px;transition:width .4s;width:0%}
+
+/* ── BUDGET ── */
+#screen-budget{background:#f0f8f4}
+.budget-body{padding:16px 16px 100px;display:flex;flex-direction:column;gap:14px}
+.income-card{background:linear-gradient(135deg,var(--dgreen),var(--green));border-radius:var(--r);padding:18px 20px;display:flex;justify-content:space-between;align-items:center;color:#fff}
+.income-label{font-size:14px;font-weight:600;opacity:.85}
+.income-val{font-size:28px;font-weight:900}
+.meter-wrap{background:#fff;border-radius:var(--r);padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.meter-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600}
+.meter-track{height:14px;background:#eee;border-radius:7px;overflow:hidden}
+.meter-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow));border-radius:7px;transition:width .4s,background .4s;width:0%}
+.meter-fill.over{background:linear-gradient(90deg,var(--yellow),var(--red))}
+.exp-item{background:#fff;border-radius:var(--r);padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px}
+.exp-icon{font-size:28px;flex-shrink:0}
+.exp-info{flex:1}
+.exp-info h4{font-size:14px;font-weight:700;color:var(--dark)}
+.exp-info p{font-size:11px;color:var(--muted)}
+.exp-ctrl{display:flex;align-items:center;gap:8px}
+.exp-ctrl button{width:34px;height:34px;border-radius:50%;border:2px solid var(--green);background:#fff;color:var(--green);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.exp-ctrl button:active{background:var(--green);color:#fff}
+.exp-amt{font-size:15px;font-weight:700;color:var(--dark);min-width:52px;text-align:center}
+.budget-fb{background:#fff;border-radius:var(--r);padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);font-size:14px;line-height:1.7;display:none}
+.budget-fb.show{display:block}
+
+/* ── INVEST ── */
+#screen-invest{background:#0d1117}
+.invest-body{padding:12px 14px 100px;display:flex;flex-direction:column;gap:12px}
+.ticker{background:#161b22;border-radius:var(--rs);padding:10px 14px;color:#58a6ff;font-size:11px;font-family:monospace;white-space:nowrap;overflow:hidden;border:1px solid #30363d}
+.chart-wrap{background:#161b22;border-radius:var(--r);padding:12px;border:1px solid #30363d}
+#stock-canvas{width:100%;border-radius:var(--rs)}
+.stock-row{background:#161b22;border-radius:var(--r);padding:14px 16px;border:1px solid #30363d;display:flex;align-items:center;gap:10px}
+.s-sym{font-size:13px;font-weight:800;min-width:48px}
+.s-name{flex:1;font-size:11px;color:#8b949e}
+.s-price{font-size:15px;font-weight:700;color:#fff}
+.s-chg{font-size:11px;font-weight:700;min-width:48px;text-align:right}
+.s-chg.up{color:#3fb950}.s-chg.down{color:#f85149}
+.s-btns{display:flex;gap:6px}
+.s-btns button{padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer}
+.b-buy{background:#238636;color:#fff}.b-sell{background:#da3633;color:#fff}
+.invest-tip{background:#161b22;border:1px solid var(--green);border-radius:var(--rs);padding:10px 14px;color:var(--green);font-size:13px;line-height:1.5}
+#screen-invest .game-top{background:#161b22;border-bottom:1px solid #30363d}
+#screen-invest .game-top-title{color:#58a6ff}
+#screen-invest .back-btn{background:rgba(255,255,255,.1)}
+
+/* ── LEADERBOARD ── */
+#screen-leaderboard{background:#f0f8f4}
+.lb-body{padding:16px 16px 100px;display:flex;flex-direction:column;gap:14px}
+.lb-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.lb-tabs::-webkit-scrollbar{display:none}
+.lb-tab{background:#fff;border:2px solid #e0e0e0;border-radius:50px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.lb-tab.active{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 3px 10px rgba(0,166,81,.3)}
+.lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:8px 0}
+.pod-slot{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;max-width:110px}
+.pod-name{font-size:11px;font-weight:700;color:var(--dark);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px}
+.pod-score{font-size:10px;color:var(--muted);text-align:center}
+.pod-block{width:100%;border-radius:10px 10px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.pod-slot:nth-child(2) .pod-block{background:linear-gradient(180deg,#fff8e1,#ffe082);height:90px}
+.pod-slot:nth-child(1) .pod-block{background:linear-gradient(180deg,#f5f5f5,#e0e0e0);height:65px}
+.pod-slot:nth-child(3) .pod-block{background:linear-gradient(180deg,#fce4ec,#f8bbd0);height:50px}
+.pod-medal{font-size:22px}.pod-pos{font-size:10px;font-weight:800;color:rgba(0,0,0,.35)}
+.lb-list{background:#fff;border-radius:var(--r);box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #f5f5f5;transition:background .1s}
+.lb-row:last-child{border-bottom:none}
+.lb-row.me{background:var(--lgreen)}
+.lb-rank{font-size:18px;min-width:30px;text-align:center;font-weight:800;color:var(--muted)}
+.lb-pname{flex:1;font-size:14px;font-weight:600;color:var(--dark)}
+.you-tag{background:var(--green);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:5px;vertical-align:middle}
+.lb-dt{font-size:11px;color:var(--muted)}
+.lb-sc{font-size:15px;font-weight:800;color:var(--green);min-width:72px;text-align:right}
+.lb-sc small{font-size:10px;font-weight:500;color:var(--muted)}
+.lb-empty{padding:36px 20px;text-align:center;color:var(--muted);font-size:15px}
+.lb-myrank{background:linear-gradient(135deg,var(--dgreen),var(--green));color:#fff;padding:14px 18px;border-radius:var(--r);font-size:14px;text-align:center}
+.lb-myrank strong{font-size:18px}
+.lb-share{background:#fff;border-radius:var(--r);padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:10px}
+.lb-share-lbl{font-size:14px;font-weight:700;color:var(--dark)}
+.lb-share-row{display:flex;gap:8px}
+.lb-share-input{flex:1;padding:10px 12px;border-radius:10px;border:2px solid #e0e0e0;font-size:11px;color:var(--muted);background:#fafafa;font-family:monospace;overflow:hidden;text-overflow:ellipsis}
+.lb-copy{padding:10px 16px;font-size:13px;white-space:nowrap}
+.lb-share-hint{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* ── LESSONS ── */
+#screen-lessons{background:#f0f8f4}
+.lessons-body{padding:16px 16px 100px;display:flex;flex-direction:column;gap:12px}
+.lesson-card{background:#fff;border-radius:var(--r);padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);cursor:pointer;border-left:5px solid var(--green);transition:transform .12s}
+.lesson-card:active{transform:scale(.99)}
+.lesson-card h3{font-size:16px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.lesson-card p{font-size:13px;color:var(--muted);line-height:1.5}
+.lesson-tag{display:inline-block;margin-top:7px;background:var(--lgreen);color:var(--dgreen);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.lesson-body{background:var(--lgreen);border-radius:var(--rs);padding:14px;margin-top:12px;font-size:13px;color:var(--dark);line-height:1.8;display:none}
+.lesson-body.open{display:block}
+
+/* ── PROFILE ── */
+#screen-profile{background:#f0f8f4}
+.profile-body{padding:20px 16px 100px;display:flex;flex-direction:column;gap:18px}
+.profile-hero{background:#fff;border-radius:var(--r);padding:24px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.p-avatar{font-size:72px;margin-bottom:8px}
+.p-name{font-size:22px;font-weight:800;color:var(--dark)}
+.p-badge{display:inline-block;margin-top:6px;background:linear-gradient(135deg,var(--green),var(--dgreen));color:#fff;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat-card{background:#fff;border-radius:var(--r);padding:16px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.stat-n{font-size:30px;font-weight:900;color:var(--green)}
+.stat-l{font-size:12px;color:var(--muted);margin-top:2px}
+.badges-wrap h3{font-size:16px;font-weight:700;color:var(--dark);margin-bottom:10px}
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge-card{background:#fff;border-radius:var(--r);padding:14px 8px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.badge-card .bi{font-size:28px}
+.badge-card .bn{font-size:10px;color:var(--muted);margin-top:4px}
+.badge-card.locked{opacity:.3;filter:grayscale(1)}
+
+/* ── NAME MODAL ── */
+#name-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+.nm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px)}
+.nm-sheet{position:relative;background:#fff;border-radius:24px 24px 0 0;padding:28px 24px calc(28px + var(--safe-bot));width:100%;max-width:480px;text-align:center;display:flex;flex-direction:column;gap:14px;animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.nm-handle{width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto -6px}
+.nm-icon{font-size:48px}
+.nm-sheet h2{font-size:22px;font-weight:800;color:var(--dark)}
+.nm-sheet p{font-size:14px;color:var(--muted);line-height:1.5}
+#name-input{width:100%;padding:16px;border-radius:14px;border:2px solid #e0e0e0;font-size:17px;text-align:center;outline:none;transition:border-color .15s}
+#name-input:focus{border-color:var(--green)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(80px + var(--safe-bot) + 12px);left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--dgreen),var(--green));color:#fff;padding:12px 22px;border-radius:50px;font-size:14px;font-weight:700;z-index:9998;box-shadow:0 4px 20px rgba(0,166,81,.4);white-space:nowrap;animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:translateX(-50%) scale(.8);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake .3s ease}
+.pop-in{animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+</style>
+
+<!-- SPLASH -->
+<div id="screen-splash" class="screen active">
+  <div class="float-coins" id="float-coins"></div>
+  <div class="splash-inner">
+    <div class="splash-logo">TD</div>
+    <h1 class="splash-title">Financial<br/><span>Quest</span></h1>
+    <p class="splash-sub">Learn · Earn · Level Up</p>
+    <div class="splash-tags">
+      <span class="splash-tag">🎮 4 Games</span>
+      <span class="splash-tag">📚 6 Lessons</span>
+      <span class="splash-tag">🏆 Leaderboard</span>
+    </div>
+    <button class="btn" onclick="App.go('home')" style="margin-top:8px">Start Adventure 🚀</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen">
+  <div class="status-space"></div>
+  <div class="top-nav">
+    <div class="top-nav-logo">TD</div>
+    <span class="top-nav-title">Financial Quest</span>
+    <div class="top-nav-stats">
+      <span class="top-stat">⭐ <span id="xp-val">0</span></span>
+      <span class="top-stat">💰 <span id="coin-val">0</span></span>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="home-hero">
+      <div class="home-hero-emoji">🎯</div>
+      <div><h2 id="hero-greeting">Welcome back!</h2><p>Pick a quest and level up your money skills.</p></div>
+    </div>
+    <div class="level-row"><span id="level-lbl">Level 1 · Penny Saver</span><span id="xp-lbl">0 / 100 XP</span></div>
+    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xp-bar"></div></div>
+    <div class="section-title">Choose Your Quest</div>
+    <div class="game-list">
+      <div class="game-row" style="--accent:#00A651" onclick="App.go('runner')">
+        <div class="game-row-icon">🏃</div>
+        <div class="game-row-info"><h3>Money Runner</h3><p>Dodge debt traps, collect coins!</p><span class="game-row-badge">RUNNER</span></div>
+        <span class="game-row-arrow">›</span>
+      </div>
+      <div class="game-row" style="--accent:#1565C0" onclick="App.go('quiz')">
+        <div class="game-row-icon">🧠</div>
+        <div class="game-row-info"><h3>Finance Academy</h3><p>Master money concepts with quizzes!</p><span class="game-row-badge">QUIZ</span></div>
+        <span class="game-row-arrow">›</span>
+      </div>
+      <div class="game-row" style="--accent:#FFB300" onclick="App.go('budget')">
+        <div class="game-row-icon">📊</div>
+        <div class="game-row-info"><h3>Budget Boss</h3><p>Balance your monthly budget!</p><span class="game-row-badge">STRATEGY</span></div>
+        <span class="game-row-arrow">›</span>
+      </div>
+      <div class="game-row" style="--accent:#6A1B9A" onclick="App.go('invest')">
+        <div class="game-row-icon">📈</div>
+        <div class="game-row-info"><h3>Stock Surge</h3><p>Buy, sell, and grow your portfolio!</p><span class="game-row-badge">INVEST</span></div>
+        <span class="game-row-arrow">›</span>
+      </div>
+    </div>
+  </div>
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="tab-home" onclick="App.go('home')"><span class="tab-icon">🗺️</span><span class="tab-label">Map</span></button>
+    <button class="tab-btn" id="tab-lb" onclick="App.go('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">Ranks</span></button>
+    <button class="tab-btn" id="tab-learn" onclick="App.go('lessons')"><span class="tab-icon">📚</span><span class="tab-label">Learn</span></button>
+    <button class="tab-btn" id="tab-profile" onclick="App.go('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
+  </nav>
+</div>
+
+<!-- RUNNER -->
+<div id="screen-runner" class="screen">
+  <div class="game-top">
+    <button class="back-btn" onclick="Runner.quit()">✕</button>
+    <span class="game-top-title">🏃 Money Runner</span>
+    <div class="game-top-score">
+      <span class="gscore">💰 <span id="r-score">0</span></span>
+      <span class="gscore">❤️ <span id="r-lives">3</span></span>
+    </div>
+  </div>
+  <canvas id="runner-canvas"></canvas>
+  <div class="runner-overlay" id="runner-overlay">
+    <div class="runner-card">
+      <h2 id="r-title">Money Runner</h2>
+      <p id="r-msg">Collect coins, dodge debt traps!<br/>Tap JUMP or press Space.</p>
+      <div class="tip-card" id="r-tip"></div>
+      <button class="btn" id="r-start-btn" onclick="Runner.start()">Play!</button>
+    </div>
+  </div>
+  <button class="jump-fab" ontouchstart="Runner.jump()" onmousedown="Runner.jump()">JUMP</button>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen">
+  <div class="game-top">
+    <button class="back-btn" onclick="App.go('home')">✕</button>
+    <span class="game-top-title">🧠 Finance Academy</span>
+    <div class="game-top-score">
+      <span class="gscore">⭐ <span id="q-xp">0</span> XP</span>
+      <span class="gscore" id="q-prog">1/10</span>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="quiz-body">
+      <div class="quiz-char" id="q-char">🦊</div>
+      <div class="quiz-bubble"><p id="q-question">Loading...</p></div>
+      <div class="quiz-opts" id="q-opts"></div>
+      <div class="quiz-fb" id="q-fb"></div>
+      <div class="qprog-wrap"><div class="qprog" id="q-bar"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET -->
+<div id="screen-budget" class="screen">
+  <div class="game-top">
+    <button class="back-btn" onclick="App.go('home')">✕</button>
+    <span class="game-top-title">📊 Budget Boss</span>
+    <div class="game-top-score"><span class="gscore">Month <span id="b-month">1</span>/6</span></div>
+  </div>
+  <div class="scroll-body">
+    <div class="budget-body">
+      <div class="income-card"><span class="income-label">Monthly Income</span><span class="income-val" id="b-income">$0</span></div>
+      <div class="meter-wrap">
+        <div class="meter-row"><span>Spent</span><span id="b-spent">$0 / $0</span></div>
+        <div class="meter-track"><div class="meter-fill" id="b-fill"></div></div>
+      </div>
+      <div id="b-expenses"></div>
+      <button class="btn" onclick="Budget.submit()">End Month</button>
+      <div class="budget-fb" id="b-fb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- INVEST -->
+<div id="screen-invest" class="screen">
+  <div class="game-top">
+    <button class="back-btn" onclick="App.go('home')">✕</button>
+    <span class="game-top-title">📈 Stock Surge</span>
+    <div class="game-top-score"><span class="gscore">💼 <span id="i-port">$1,000</span></span></div>
+  </div>
+  <div class="scroll-body">
+    <div class="invest-body">
+      <div class="ticker" id="i-ticker">Loading market data...</div>
+      <div class="chart-wrap"><canvas id="stock-canvas" width="320" height="140"></canvas></div>
+      <div id="i-stocks"></div>
+      <div class="invest-tip" id="i-tip"></div>
+      <button class="btn" onclick="Invest.next()">Next Round ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="screen-leaderboard" class="screen">
+  <div class="status-space"></div>
+  <div class="top-nav"><div class="top-nav-logo">TD</div><span class="top-nav-title">🏆 Leaderboard</span></div>
+  <div class="scroll-body">
+    <div class="lb-body" id="lb-body"></div>
+  </div>
+  <nav class="tab-bar">
+    <button class="tab-btn" onclick="App.go('home')"><span class="tab-icon">🗺️</span><span class="tab-label">Map</span></button>
+    <button class="tab-btn active" onclick="App.go('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">Ranks</span></button>
+    <button class="tab-btn" onclick="App.go('lessons')"><span class="tab-icon">📚</span><span class="tab-label">Learn</span></button>
+    <button class="tab-btn" onclick="App.go('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
+  </nav>
+</div>
+
+<!-- LESSONS -->
+<div id="screen-lessons" class="screen">
+  <div class="status-space"></div>
+  <div class="top-nav"><div class="top-nav-logo">TD</div><span class="top-nav-title">📚 Finance Library</span></div>
+  <div class="scroll-body">
+    <div class="lessons-body" id="lessons-body"></div>
+  </div>
+  <nav class="tab-bar">
+    <button class="tab-btn" onclick="App.go('home')"><span class="tab-icon">🗺️</span><span class="tab-label">Map</span></button>
+    <button class="tab-btn" onclick="App.go('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">Ranks</span></button>
+    <button class="tab-btn active" onclick="App.go('lessons')"><span class="tab-icon">📚</span><span class="tab-label">Learn</span></button>
+    <button class="tab-btn" onclick="App.go('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
+  </nav>
+</div>
+
+<!-- PROFILE -->
+<div id="screen-profile" class="screen">
+  <div class="status-space"></div>
+  <div class="top-nav"><div class="top-nav-logo">TD</div><span class="top-nav-title">👤 My Profile</span></div>
+  <div class="scroll-body">
+    <div class="profile-body">
+      <div class="profile-hero">
+        <div class="p-avatar">🦊</div>
+        <div class="p-name" id="p-name">Financial Hero</div>
+        <div class="p-badge">Level <span id="p-level">1</span></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-n" id="p-xp">0</div><div class="stat-l">Total XP</div></div>
+        <div class="stat-card"><div class="stat-n" id="p-coins">0</div><div class="stat-l">Coins</div></div>
+        <div class="stat-card"><div class="stat-n" id="p-streak">1</div><div class="stat-l">Day Streak</div></div>
+        <div class="stat-card"><div class="stat-n" id="p-lessons">0</div><div class="stat-l">Lessons Done</div></div>
+      </div>
+      <div class="badges-wrap"><h3>Badges</h3><div class="badges-grid" id="p-badges"></div></div>
+    </div>
+  </div>
+  <nav class="tab-bar">
+    <button class="tab-btn" onclick="App.go('home')"><span class="tab-icon">🗺️</span><span class="tab-label">Map</span></button>
+    <button class="tab-btn" onclick="App.go('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">Ranks</span></button>
+    <button class="tab-btn" onclick="App.go('lessons')"><span class="tab-icon">📚</span><span class="tab-label">Learn</span></button>
+    <button class="tab-btn active" onclick="App.go('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
+  </nav>
+</div>
+
+<script>
+// ── POLYFILL ──
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();return this;};}
+
+// ── DATA ──
+const LESSONS=[{id:'budgeting',title:'💰 What is Budgeting?',tag:'Basics',summary:'A budget is a plan for your money — it tells your dollars where to go.',content:`A budget helps you track what you earn and what you spend. The 50/30/20 rule:\n• 50% on Needs (rent, food, transit)\n• 30% on Wants (games, eating out, clothes)\n• 20% on Savings & paying off debt\n\nTD Tip: Even saving $5/week adds up to $260 a year!`},{id:'savings',title:'🏦 Why Save Money?',tag:'Savings',summary:'Saving money gives you freedom and security for the future.',content:`Savings protect you when unexpected things happen.\n• Emergency Fund: 3-6 months of expenses\n• Short-term: Saving for something specific\n• Long-term: Retirement, house down payment\n\nTD Tip: A TD savings account earns interest — your money grows while you sleep!`},{id:'credit',title:'💳 Understanding Credit',tag:'Credit',summary:'Credit is borrowed money you promise to pay back — use it wisely.',content:`A credit score (300–900) shows how trustworthy you are with money.\n\n✅ Paying bills on time\n✅ Not maxing out your credit card\n✅ Having a long credit history\n❌ Applying for too much credit at once\n\nTD Tip: Start building credit early with a student credit card!`},{id:'investing',title:'📈 Investing 101',tag:'Investing',summary:'Investing means putting money to work so it can grow over time.',content:`Key concepts:\n• Stocks: Owning a small piece of a company\n• Bonds: Lending money to a company/government\n• Diversification: Spreading money to reduce risk\n• Compound interest: Earning interest on your interest!\n\nTD Tip: Starting at 18 vs 28 can mean hundreds of thousands more at retirement!`},{id:'taxes',title:'📋 Taxes Explained',tag:'Taxes',summary:'Taxes fund public services — understanding them helps you keep more money.',content:`Key tax tools for young Canadians:\n• TFSA: Investment growth is TAX FREE\n• RRSP: Save for retirement and reduce taxes now\n• Tax return: If too much was withheld, you get money back!\n\nTD Tip: Filing your taxes every year builds your RRSP contribution room!`},{id:'debt',title:'⚠️ Good Debt vs Bad Debt',tag:'Debt',summary:'Not all debt is equal — some debt helps you build wealth, some destroys it.',content:`Good debt:\n• Student loans (education increases earning power)\n• Mortgage (owning a home builds equity)\n\nBad debt:\n• High-interest credit card debt (19-29% interest!)\n• Payday loans (can be 400%+ interest!)\n\nTD Tip: Always pay more than the minimum on credit cards!`}];
+
+const QS=[{q:"What does the '50' in the 50/30/20 budget rule represent?",a:["Savings","Needs","Wants","Investments"],c:1,e:"50% goes to Needs like rent, food, and transportation."},{q:"What is compound interest?",a:["Interest on a loan","Earning interest on your interest","A type of tax","A bank fee"],c:1,e:"Compound interest means you earn interest on both your original money AND the interest already earned!"},{q:"What is a good credit score range in Canada?",a:["100–300","300–500","660–900","1000–1500"],c:2,e:"In Canada, credit scores range from 300–900. A score of 660+ is considered good!"},{q:"What does TFSA stand for?",a:["Total Financial Savings Account","Tax-Free Savings Account","TD Federal Savings Account","Timed Fixed Savings Account"],c:1,e:"TFSA = Tax-Free Savings Account. Any money you earn inside a TFSA is completely tax-free!"},{q:"Which is an example of 'bad debt'?",a:["Student loan","Mortgage","Payday loan","Business loan"],c:2,e:"Payday loans can charge 400%+ annual interest. Always avoid them!"},{q:"What is an emergency fund?",a:["Money for vacations","3-6 months of living expenses saved","A government benefit","A type of investment"],c:1,e:"An emergency fund covers 3-6 months of expenses — your financial safety net."},{q:"What does 'diversification' mean in investing?",a:["Putting all money in one stock","Spreading investments to reduce risk","Investing only in bonds","Saving in multiple banks"],c:1,e:"Diversification means spreading your money across different investments to reduce risk."},{q:"When should you start saving for retirement?",a:["At 60","At 40","As early as possible","After buying a house"],c:2,e:"The earlier you start, the more compound interest works in your favor!"},{q:"Best strategy for paying off multiple debts?",a:["Pay the smallest first","Pay the highest-interest first","Pay them all equally","Ignore them"],c:1,e:"The Avalanche Method — paying highest-interest debt first — saves you the most money."},{q:"What happens if you only pay the minimum on your credit card?",a:["Nothing changes","Your score improves","You pay much more in interest over time","The debt disappears"],c:2,e:"Paying only the minimum means most of your payment goes to interest, not the balance!"}];
+
+const TIPS=["💡 Pay yourself first — save before you spend!","💡 A latte a day = ~$1,500/year. Small habits add up!","💡 Check your bank statement weekly to spot surprises.","💡 Automate your savings so you never forget.","💡 Your credit score affects your mortgage rate — protect it!","💡 Needs vs Wants: Ask yourself before every purchase.","💡 Compound interest doubles money roughly every 7 years at 10%.","💡 A TFSA is the best first investment account for Canadians."];
+
+// ── LEADERBOARD ──
+const LB=(()=>{
+const SK='tdFQ_lb2',PK='tdFQ_pname';
+const CATS=[{id:'overall',label:'Overall XP',icon:'⭐',unit:'XP'},{id:'runner',label:'Money Runner',icon:'🏃',unit:'pts'},{id:'quiz',label:'Finance Academy',icon:'🧠',unit:'XP'},{id:'budget',label:'Budget Boss',icon:'📊',unit:'XP'},{id:'invest',label:'Stock Surge',icon:'📈',unit:'$'}];
+let tab='overall';
+const ld=()=>{try{return JSON.parse(localStorage.getItem(SK))||{};}catch{return{};}};
+const sv=d=>{try{localStorage.setItem(SK,JSON.stringify(d));}catch{}};
+const getName=()=>localStorage.getItem(PK)||null;
+const setName=n=>localStorage.setItem(PK,n.trim().slice(0,20));
+function submit(cat,score,name){const n=name||getName()||'Anonymous';const d=ld();if(!d[cat])d[cat]=[];const ex=d[cat].findIndex(e=>e.name===n);const entry={name:n,score,date:Date.now()};if(ex>=0){if(score>d[cat][ex].score)d[cat][ex]=entry;}else d[cat].push(entry);d[cat].sort((a,b)=>b.score-a.score);d[cat]=d[cat].slice(0,20);sv(d);}
+function scores(cat){const d=ld();return(d[cat]||[]).sort((a,b)=>b.score-a.score);}
+function shareLink(n,s){return`${location.href.split('#')[0]}#share=${btoa(JSON.stringify({n,s,t:Date.now()}))}`;}
+function promptName(cb){if(getName()){cb(getName());return;}const m=document.createElement('div');m.id='name-modal';m.innerHTML=`<div class="nm-backdrop"></div><div class="nm-sheet pop-in"><div class="nm-handle"></div><div class="nm-icon">🏆</div><h2>What's your name?</h2><p>Your name will appear on the leaderboard.</p><input type="text" id="name-input" placeholder="Enter your name..." maxlength="20" autocomplete="off"/><button class="btn" id="nm-btn">Let's Go!</button></div>`;document.body.appendChild(m);const inp=document.getElementById('name-input'),btn=document.getElementById('nm-btn');inp.focus();const sub=()=>{const v=inp.value.trim();if(!v){inp.classList.add('shake');setTimeout(()=>inp.classList.remove('shake'),400);return;}setName(v);m.remove();cb(v);};btn.onclick=sub;inp.onkeydown=e=>{if(e.key==='Enter')sub();};}
+function seed(){const KEY='tdFQ_seeded2';if(localStorage.getItem(KEY))return;const now=Date.now(),day=86400000;const FAKE=[{name:'Jordan M.',overall:840,runner:312,quiz:180,budget:40,invest:1480,d:0},{name:'Priya S.',overall:720,runner:245,quiz:200,budget:40,invest:1320,d:1},{name:'Marcus T.',overall:650,runner:289,quiz:160,budget:35,invest:1210,d:1},{name:'Aisha K.',overall:590,runner:198,quiz:180,budget:40,invest:1390,d:2},{name:'Liam C.',overall:510,runner:176,quiz:140,budget:30,invest:1150,d:2},{name:'Sofia R.',overall:470,runner:134,quiz:200,budget:40,invest:1280,d:3},{name:'Dev P.',overall:420,runner:221,quiz:120,budget:25,invest:1090,d:3},{name:'Chloe W.',overall:380,runner:109,quiz:160,budget:35,invest:1060,d:4},{name:'Noah B.',overall:310,runner:143,quiz:100,budget:20,invest:1030,d:5},{name:'Fatima A.',overall:260,runner:88,quiz:120,budget:30,invest:1010,d:6}];const data=ld();FAKE.forEach(p=>{const ts=now-p.d*day-Math.random()*day*.5;['overall','runner','quiz','budget','invest'].forEach(cat=>{if(!data[cat])data[cat]=[];data[cat].push({name:p.name,score:p[cat],date:Math.floor(ts)});});});Object.keys(data).forEach(cat=>{data[cat].sort((a,b)=>b.score-a.score);data[cat]=data[cat].slice(0,20);});sv(data);localStorage.setItem(KEY,'1');}
+function render(){const c=document.getElementById('lb-body');if(!c)return;const pn=getName()||'You';const tabsHtml=CATS.map(cat=>`<button class="lb-tab ${tab===cat.id?'active':''}" onclick="LB.setTab('${cat.id}')">${cat.icon} ${cat.label}</button>`).join('');const cat=CATS.find(x=>x.id===tab);const sc=scores(tab);const myRank=sc.findIndex(e=>e.name===pn);const podium=[sc[1],sc[0],sc[2]];const medals=['🥈','🥇','🥉'];const podHtml=sc.length>=3?`<div class="lb-podium">${podium.map((e,i)=>{const pos=[2,1,3][i];return e?`<div class="pod-slot"><div class="pod-name">${e.name}</div><div class="pod-score">${e.score.toLocaleString()} ${cat.unit}</div><div class="pod-block">${medals[i]}<span class="pod-pos">#${pos}</span></div></div>`:`<div class="pod-slot"><div class="pod-block" style="opacity:.2"><span class="pod-pos">#${pos}</span></div></div>`;}).join('')}</div>`:'';const listHtml=sc.length===0?`<div class="lb-empty">No scores yet — be the first! 🚀</div>`:sc.map((e,i)=>{const isMe=e.name===pn;const ri=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;const dt=new Date(e.date).toLocaleDateString('en-CA',{month:'short',day:'numeric'});return`<div class="lb-row ${isMe?'me':''}"><span class="lb-rank">${ri}</span><span class="lb-pname">${e.name}${isMe?' <span class="you-tag">YOU</span>':''}</span><span class="lb-dt">${dt}</span><span class="lb-sc">${e.score.toLocaleString()} <small>${cat.unit}</small></span></div>`;}).join('');const myRankHtml=myRank>=0?`<div class="lb-myrank">Your rank: <strong>#${myRank+1}</strong> · <strong>${sc[myRank].score.toLocaleString()} ${cat.unit}</strong></div>`:`<div class="lb-myrank">Play a game to get on the board!</div>`;const allSc={};CATS.forEach(x=>{const s=scores(x.id).find(e=>e.name===pn);allSc[x.id]=s?s.score:0;});const sl=shareLink(pn,allSc);c.innerHTML=`<div class="lb-tabs">${tabsHtml}</div>${podHtml}<div class="lb-list">${listHtml}</div>${myRankHtml}<div class="lb-share"><p class="lb-share-lbl">Challenge a friend:</p><div class="lb-share-row"><input class="lb-share-input" id="lb-si" value="${sl}" readonly/><button class="btn btn-sm lb-copy" onclick="LB.copy()">Copy</button></div><p class="lb-share-hint">Friends who open this link see your scores on their leaderboard.</p></div>`;}
+function setTab(id){tab=id;render();}
+function copy(){const inp=document.getElementById('lb-si');if(!inp)return;navigator.clipboard.writeText(inp.value).then(()=>{const b=document.querySelector('.lb-copy');if(b){b.textContent='✅';setTimeout(()=>b.textContent='Copy',2000);}}).catch(()=>{inp.select();document.execCommand('copy');});}
+function init(){seed();const h=location.hash;if(h.startsWith('#share=')){try{const p=JSON.parse(atob(h.slice(7)));if(p.n&&p.s){Object.entries(p.s).forEach(([c,s])=>{if(s>0)submit(c,s,p.n);});history.replaceState(null,'',location.pathname);setTimeout(()=>{const t=document.createElement('div');t.className='toast';t.textContent=`🏆 ${p.n}'s scores added!`;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);},800);}}catch{}}}
+return{submit,scores,render,setTab,copy,promptName,getName,init};
+})();
+</script>
+
+<script>
+// ── RUNNER ──
+const Runner=(()=>{
+let cv,ctx,aid,state='idle',score,lives,dist,spd,fc,player,obs,coins,parts,gy;
+const OT=[{label:'DEBT',color:'#E53935',emoji:'💸',tip:'Debt costs you money through interest!'},{label:'SCAM',color:'#6A1B9A',emoji:'⚠️',tip:'Scams steal your money — never share your PIN!'},{label:'FEES',color:'#E65100',emoji:'🏦',tip:'Bank fees add up! Look for no-fee accounts.'},{label:'LOAN',color:'#B71C1C',emoji:'📄',tip:'Payday loans can charge 400%+ interest!'}];
+const CT=[{v:1,color:'#FFB300',r:7},{v:5,color:'#00A651',r:9},{v:10,color:'#1565C0',r:11}];
+function resize(){const r=cv.parentElement.getBoundingClientRect();cv.width=r.width;cv.height=r.height-60;gy=cv.height-80;}
+function init(){cv=document.getElementById('runner-canvas');ctx=cv.getContext('2d');resize();window.addEventListener('resize',resize);document.addEventListener('keydown',e=>{if(e.code==='Space')jump();});cv.addEventListener('touchstart',e=>{e.preventDefault();jump();},{passive:false});cv.addEventListener('mousedown',jump);}
+function reset(){score=0;lives=3;dist=0;spd=4;fc=0;player={x:80,y:gy-50,w:40,h:50,vy:0,og:true,inv:0};obs=[];coins=[];parts=[];hud();}
+function start(){if(state==='running')return;reset();state='running';document.getElementById('runner-overlay').classList.add('gone');if(aid)cancelAnimationFrame(aid);loop();}
+function quit(){state='idle';if(aid)cancelAnimationFrame(aid);App.go('home');}
+function jump(){if(state!=='running')return;if(player.og){player.vy=-16;player.og=false;sp(player.x+player.w/2,player.y+player.h,'#00A651',6);}}
+function sp(x,y,c,n){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*6,vy:-Math.random()*5-2,life:1,c,s:Math.random()*6+3});}
+function hud(){document.getElementById('r-score').textContent=score;document.getElementById('r-lives').textContent='❤️'.repeat(lives);}
+function spObs(){const t=OT[Math.floor(Math.random()*OT.length)];const h=50+Math.random()*30;obs.push({x:cv.width+20,y:gy-h,w:44,h,...t,hit:false});}
+function spCoin(){const t=CT[Math.floor(Math.random()*CT.length)];const row=Math.random()<.3?1:0;coins.push({x:cv.width+20,y:gy-60-(row*80),...t,col:false,bob:Math.random()*Math.PI*2});}
+function drawBg(){const sky=ctx.createLinearGradient(0,0,0,gy);sky.addColorStop(0,'#0d1b2a');sky.addColorStop(1,'#1a3a5c');ctx.fillStyle=sky;ctx.fillRect(0,0,cv.width,gy);ctx.fillStyle='rgba(255,255,255,.5)';for(let i=0;i<25;i++){ctx.beginPath();ctx.arc((i*137+fc*.2)%cv.width,(i*73)%(gy*.7),1,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#0a1628';const blds=[60,90,50,110,70,85,45,100];let bx=(-fc*spd*.3)%(cv.width*1.5);blds.forEach((bh,i)=>{const bw=40+(i%3)*15;ctx.fillRect(bx+i*55,gy-bh,bw,bh);ctx.fillStyle='rgba(255,220,100,.25)';for(let wy=gy-bh+8;wy<gy-10;wy+=14)for(let wx=bx+i*55+6;wx<bx+i*55+bw-6;wx+=12)if(Math.random()>.4)ctx.fillRect(wx,wy,6,8);ctx.fillStyle='#0a1628';});const g=ctx.createLinearGradient(0,gy,0,cv.height);g.addColorStop(0,'#006B3F');g.addColorStop(1,'#004d2c');ctx.fillStyle=g;ctx.fillRect(0,gy,cv.width,cv.height-gy);ctx.strokeStyle='#00C96A';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(cv.width,gy);ctx.stroke();}
+function drawPlayer(){const p=player;if(p.inv>0&&Math.floor(p.inv/4)%2===0)return;ctx.save();ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.fillStyle='#00A651';ctx.beginPath();ctx.roundRect(-p.w/2,-p.h/2,p.w,p.h,8);ctx.fill();ctx.fillStyle='white';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TD',0,4);ctx.fillStyle='#FDBCB4';ctx.beginPath();ctx.arc(0,-p.h/2-12,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#333';ctx.beginPath();ctx.arc(-5,-p.h/2-14,2.5,0,Math.PI*2);ctx.arc(5,-p.h/2-14,2.5,0,Math.PI*2);ctx.fill();ctx.restore();}
+function drawObs(){obs.forEach(o=>{if(o.hit)return;ctx.save();ctx.translate(o.x+o.w/2,o.y+o.h/2);ctx.fillStyle=o.color;ctx.beginPath();ctx.roundRect(-o.w/2,-o.h/2,o.w,o.h,8);ctx.fill();ctx.font='20px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.emoji,0,-8);ctx.fillStyle='white';ctx.font='bold 9px sans-serif';ctx.fillText(o.label,0,12);ctx.restore();});}
+function drawCoins(){const t=fc*.05;coins.forEach(c=>{if(c.col)return;ctx.save();ctx.translate(c.x,c.y+Math.sin(t+c.bob)*5);ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,c.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.7)';ctx.font=`bold ${c.r}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.restore();});}
+function drawParts(){parts.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s*p.life,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;}
+function checkCol(){coins.forEach(c=>{if(c.col)return;const dx=(player.x+player.w/2)-c.x,dy=(player.y+player.h/2)-c.y;if(Math.sqrt(dx*dx+dy*dy)<c.r+20){c.col=true;score+=c.v;App.addCoins(c.v);sp(c.x,c.y,c.color,8);hud();}});if(player.inv>0)return;obs.forEach(o=>{if(o.hit)return;if(player.x+8<o.x+o.w&&player.x+player.w-8>o.x&&player.y+8<o.y+o.h&&player.y+player.h>o.y){o.hit=true;lives--;player.inv=80;sp(player.x+player.w/2,player.y+player.h/2,'#E53935',12);document.getElementById('r-tip').textContent=o.tip;hud();if(lives<=0)over();}});}
+function over(){state='dead';cancelAnimationFrame(aid);const xp=Math.floor(score/2);App.addXP(xp);LB.promptName(n=>{LB.submit('runner',score,n);});const ov=document.getElementById('runner-overlay');ov.classList.remove('gone');document.getElementById('r-title').textContent='💸 Game Over!';document.getElementById('r-msg').textContent=`You collected ${score} coins!\n+${xp} XP earned!`;document.getElementById('r-tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];document.getElementById('r-start-btn').textContent='Play Again';}
+function loop(){if(state!=='running')return;fc++;dist+=spd*.05;spd=4+dist*.02;player.vy+=.7;player.y+=player.vy;if(player.y>=gy-player.h){player.y=gy-player.h;player.vy=0;player.og=true;}if(player.inv>0)player.inv--;if(fc%Math.max(60,120-Math.floor(dist/10))===0)spObs();if(fc%45===0)spCoin();obs.forEach(o=>{o.x-=spd;});coins.forEach(c=>{c.x-=spd;});obs=obs.filter(o=>o.x>-100);coins=coins.filter(c=>c.x>-50);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.life-=.04;});parts=parts.filter(p=>p.life>0);checkCol();ctx.clearRect(0,0,cv.width,cv.height);drawBg();drawParts();drawCoins();drawObs();drawPlayer();ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.roundRect(10,10,110,32,16);ctx.fill();ctx.fillStyle='#FFB300';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(`💰 ${score}`,18,26);aid=requestAnimationFrame(loop);}
+document.addEventListener('DOMContentLoaded',init);
+return{start,jump,quit};
+})();
+
+// ── QUIZ ──
+const Quiz=(()=>{
+let cq=0,xp=0,ans=false,ci=0;
+const CH=['🦊','🐸','🦁','🐧','🦄','🐯'];
+const sh=a=>[...a].sort(()=>Math.random()-.5);
+function load(){cq=0;xp=0;ans=false;ci=Math.floor(Math.random()*CH.length);document.getElementById('q-char').textContent=CH[ci];document.getElementById('q-xp').textContent='0';renderQ();}
+function renderQ(){if(cq>=QS.length){done();return;}ans=false;const q=QS[cq];document.getElementById('q-question').textContent=q.q;document.getElementById('q-prog').textContent=`${cq+1}/${QS.length}`;document.getElementById('q-bar').style.width=`${(cq/QS.length)*100}%`;const fb=document.getElementById('q-fb');fb.className='quiz-fb';fb.textContent='';const idx=q.a.map((a,i)=>({t:a,i}));const sh2=sh(idx);const c=document.getElementById('q-opts');c.innerHTML='';sh2.forEach(item=>{const btn=document.createElement('button');btn.className='quiz-opt pop-in';btn.textContent=item.t;btn.onclick=()=>answer(item.i,q.c,btn,c);c.appendChild(btn);});}
+function answer(chosen,correct,btn,cont){if(ans)return;ans=true;const ok=chosen===correct;const fb=document.getElementById('q-fb');Array.from(cont.children).forEach(b=>b.disabled=true);if(ok){btn.classList.add('ok');const pts=20;xp+=pts;App.addXP(pts);document.getElementById('q-xp').textContent=xp;fb.className='quiz-fb ok-fb show';fb.innerHTML=`✅ Correct! +${pts} XP<br/><small>${QS[cq].e}</small>`;document.getElementById('q-char').textContent='🎉';setTimeout(()=>{document.getElementById('q-char').textContent=CH[ci];},1000);}else{btn.classList.add('no');fb.className='quiz-fb no-fb show';fb.innerHTML=`❌ Not quite!<br/><small>${QS[cq].e}</small>`;btn.classList.add('shake');}setTimeout(()=>{cq++;renderQ();},2200);}
+function done(){document.getElementById('q-opts').innerHTML='';document.getElementById('q-question').textContent=`Quiz complete! You earned ${xp} XP! 🎓`;document.getElementById('q-char').textContent='🏆';document.getElementById('q-bar').style.width='100%';LB.promptName(n=>{LB.submit('quiz',xp,n);});document.getElementById('q-fb').className='quiz-fb ok-fb show';document.getElementById('q-fb').innerHTML=`Amazing work! You're building real financial skills.<br/><button class="btn btn-sm" style="margin-top:12px" onclick="Quiz.load()">Play Again</button>`;App.addBadge('quiz-master');}
+return{load};
+})();
+</script>
+
+<script>
+// ── BUDGET ──
+const Budget=(()=>{
+let month,income,expenses;
+const SC=[{income:1800,expenses:[{icon:'🏠',name:'Rent (shared)',desc:'Your share of a shared apartment',min:400,max:800,step:50,val:600,req:true},{icon:'🍔',name:'Food & Groceries',desc:'Meals, snacks, and groceries',min:100,max:400,step:25,val:200,req:true},{icon:'🚌',name:'Transit Pass',desc:'Monthly bus/subway pass',min:0,max:150,step:50,val:100,req:false},{icon:'📱',name:'Phone Plan',desc:'Monthly cell phone bill',min:0,max:80,step:10,val:40,req:false},{icon:'🎮',name:'Entertainment',desc:'Games, streaming, fun',min:0,max:200,step:20,val:60,req:false},{icon:'💰',name:'Savings',desc:'Money set aside for the future',min:0,max:400,step:25,val:100,req:false}]},{income:3200,expenses:[{icon:'🏠',name:'Rent',desc:'Your own apartment',min:800,max:1600,step:100,val:1100,req:true},{icon:'🍔',name:'Food & Groceries',desc:'Meals and groceries',min:200,max:600,step:50,val:350,req:true},{icon:'🚗',name:'Car / Transit',desc:'Car payment or transit',min:0,max:500,step:50,val:200,req:false},{icon:'📱',name:'Phone Plan',desc:'Monthly cell phone bill',min:0,max:100,step:10,val:60,req:false},{icon:'🎮',name:'Entertainment',desc:'Fun money',min:0,max:300,step:25,val:100,req:false},{icon:'💰',name:'Savings / TFSA',desc:'Investing in your future',min:0,max:800,step:50,val:300,req:false},{icon:'👕',name:'Clothing',desc:'Clothes and accessories',min:0,max:200,step:25,val:75,req:false}]}];
+function load(){month=1;const sc=SC[Math.floor(Math.random()*SC.length)];income=sc.income;expenses=sc.expenses.map(e=>({...e}));document.getElementById('b-income').textContent=`$${income.toLocaleString()}`;document.getElementById('b-month').textContent=month;document.getElementById('b-fb').className='budget-fb';render();}
+function render(){const list=document.getElementById('b-expenses');list.innerHTML='';expenses.forEach((e,i)=>{const d=document.createElement('div');d.className='exp-item';d.innerHTML=`<div class="exp-icon">${e.icon}</div><div class="exp-info"><h4>${e.name}${e.req?' <span style="color:#E53935;font-size:10px">REQ</span>':''}</h4><p>${e.desc}</p></div><div class="exp-ctrl"><button onclick="Budget.adj(${i},-1)">−</button><span class="exp-amt">$${e.val}</span><button onclick="Budget.adj(${i},1)">+</button></div>`;list.appendChild(d);});meter();}
+function adj(i,d){const e=expenses[i];const nv=e.val+d*e.step;if(nv<e.min||nv>e.max)return;e.val=nv;render();}
+function meter(){const total=expenses.reduce((s,e)=>s+e.val,0);const pct=Math.min((total/income)*100,100);const f=document.getElementById('b-fill');f.style.width=pct+'%';f.className='meter-fill'+(total>income?' over':'');document.getElementById('b-spent').textContent=`$${total} / $${income}`;}
+function submit(){const total=expenses.reduce((s,e)=>s+e.val,0);const sav=expenses.find(e=>e.name.includes('Savings'));const savings=sav?sav.val:0;const fb=document.getElementById('b-fb');fb.className='budget-fb show';let msg='',xp=0;if(total>income){msg=`⚠️ You overspent by $${total-income}! Try reducing entertainment or clothing.`;xp=5;}else if(savings>=income*.2){msg=`🌟 Amazing! You saved ${Math.round((savings/income)*100)}% of your income — 50/30/20 rule in action!`;xp=40;App.addBadge('budget-boss');}else if(savings>0){msg=`✅ Good job! You saved $${savings}. Try to aim for 20% ($${Math.floor(income*.2)}).`;xp=20;}else{msg=`💡 You balanced your budget but saved nothing. Even $${Math.floor(income*.1)}/month adds up!`;xp=10;}App.addXP(xp);msg+=`<br/><br/><strong>+${xp} XP earned!</strong>`;LB.promptName(n=>{LB.submit('budget',xp,n);});if(month<6){msg+=`<br/><button class="btn btn-sm" style="margin-top:12px" onclick="Budget.next()">Next Month ▶</button>`;}else{msg+=`<br/><button class="btn btn-sm" style="margin-top:12px" onclick="Budget.load()">Play Again</button>`;}fb.innerHTML=msg;}
+function next(){month++;document.getElementById('b-month').textContent=month;income=Math.floor(income*1.03);document.getElementById('b-income').textContent=`$${income.toLocaleString()}`;document.getElementById('b-fb').className='budget-fb';render();}
+return{load,adj,submit,next};
+})();
+
+// ── INVEST ──
+const Invest=(()=>{
+let port,cash,round,hold,hist={},cv,ctx;
+const ST=[{sym:'TDB',name:'TD Bank',price:85,vol:.03,trend:.01,color:'#00A651'},{sym:'TECH',name:'TechCorp',price:120,vol:.07,trend:.02,color:'#1565C0'},{sym:'GROC',name:'GroceryCo',price:45,vol:.02,trend:.005,color:'#E65100'},{sym:'ENRG',name:'EnergyPlus',price:60,vol:.05,trend:-.005,color:'#6A1B9A'}];
+const ITIPS=["💡 Time IN the market beats timing the market.","💡 Diversify! Don't put all your money in one stock.","💡 Volatility is normal. Don't panic-sell during dips.","💡 In a real TFSA, all these gains would be TAX FREE!","💡 Compound growth: $1,000 at 7%/year = $7,612 after 30 years!"];
+function load(){cv=document.getElementById('stock-canvas');ctx=cv.getContext('2d');port=1000;cash=1000;round=1;hold={};ST.forEach(s=>{hold[s.sym]=0;hist[s.sym]=[s.price];});updatePort();ticker();stocks();chart();tip();}
+function updatePort(){let sv=0;ST.forEach(s=>{sv+=(hold[s.sym]||0)*s.price;});port=cash+sv;document.getElementById('i-port').textContent=`$${port.toFixed(0)}`;}
+function ticker(){const items=ST.map(s=>{const prev=hist[s.sym];const last=prev[prev.length-1];const ch=((s.price-last)/last*100).toFixed(1);return`${s.sym} $${s.price.toFixed(2)} ${ch>=0?'▲':'▼'}${Math.abs(ch)}%`;}).join('  |  ');document.getElementById('i-ticker').textContent=`📊 ${items}`;}
+function stocks(){const list=document.getElementById('i-stocks');list.innerHTML='';ST.forEach(s=>{const prev=hist[s.sym];const pp=prev.length>1?prev[prev.length-2]:prev[0];const ch=((s.price-pp)/pp*100).toFixed(1);const up=ch>=0;const owned=hold[s.sym]||0;const d=document.createElement('div');d.className='stock-row';d.innerHTML=`<div class="s-sym" style="color:${s.color}">${s.sym}</div><div class="s-name">${s.name}<br/><small>Owned: ${owned}</small></div><div><div class="s-price">$${s.price.toFixed(2)}</div><div class="s-chg ${up?'up':'down'}">${up?'▲':'▼'}${Math.abs(ch)}%</div></div><div class="s-btns"><button class="b-buy" onclick="Invest.buy('${s.sym}')">BUY</button><button class="b-sell" onclick="Invest.sell('${s.sym}')" ${owned===0?'disabled style="opacity:.4"':''}>SELL</button></div>`;list.appendChild(d);});}
+function buy(sym){const s=ST.find(x=>x.sym===sym);if(!s||cash<s.price){fb('Not enough cash!');return;}cash-=s.price;hold[sym]=(hold[sym]||0)+1;updatePort();stocks();fb(`Bought 1 share of ${sym} at $${s.price.toFixed(2)}`);}
+function sell(sym){const s=ST.find(x=>x.sym===sym);if(!s||!hold[sym])return;cash+=s.price;hold[sym]--;updatePort();stocks();fb(`Sold 1 share of ${sym} at $${s.price.toFixed(2)}`);}
+function fb(msg){document.getElementById('i-tip').textContent=msg;}
+function tip(){document.getElementById('i-tip').textContent=ITIPS[Math.floor(Math.random()*ITIPS.length)];}
+function next(){round++;ST.forEach(s=>{hist[s.sym].push(s.price);const ch=(Math.random()-.5)*2*s.vol+s.trend;s.price=Math.max(5,s.price*(1+ch));});updatePort();ticker();stocks();chart();const gain=port-1000;if(round>10){const xp=Math.max(10,Math.floor(gain/10));App.addXP(xp);LB.promptName(n=>{LB.submit('invest',Math.floor(port),n);});fb(`Round ${round} — Portfolio: $${port.toFixed(0)} (${gain>=0?'+':''}$${gain.toFixed(0)}) | +${xp} XP`);if(gain>200)App.addBadge('investor');}else tip();}
+function chart(){if(!ctx)return;const w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0d1117';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#21262d';ctx.lineWidth=1;for(let i=0;i<=4;i++){const y=(h/4)*i;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}ST.forEach(s=>{const hs=hist[s.sym];if(hs.length<2)return;const all=ST.flatMap(x=>hist[x.sym]);const mn=Math.min(...all)*.95,mx=Math.max(...all)*1.05,rng=mx-mn;ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();hs.forEach((p,i)=>{const x=(i/Math.max(hs.length-1,1))*(w-20)+10;const y=h-((p-mn)/rng)*(h-20)-10;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();const lp=hs[hs.length-1],ly=h-((lp-mn)/rng)*(h-20)-10;ctx.fillStyle=s.color;ctx.font='bold 9px monospace';ctx.textAlign='right';ctx.fillText(s.sym,w-4,ly-4);});}
+return{load,buy,sell,next};
+})();
+
+// ── APP ──
+const App=(()=>{
+let state={xp:0,coins:0,level:1,streak:1,lessons:0,badges:[]};
+const BADGES=[{id:'first-run',icon:'🏃',name:'First Run'},{id:'quiz-master',icon:'🎓',name:'Quiz Master'},{id:'budget-boss',icon:'📊',name:'Budget Boss'},{id:'investor',icon:'📈',name:'Investor'},{id:'saver',icon:'💰',name:'Super Saver'},{id:'scholar',icon:'📚',name:'Scholar'}];
+const TITLES=['Penny Saver','Budget Starter','Coin Collector','Smart Spender','Savings Star','Credit Builder','Investment Rookie','Finance Pro','Money Master','Financial Legend'];
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(`screen-${id}`)?.classList.add('active');if(id==='runner'){const ov=document.getElementById('runner-overlay');ov.classList.remove('gone');document.getElementById('r-title').textContent='🏃 Money Runner';document.getElementById('r-msg').textContent='Collect coins, dodge debt traps!\nTap JUMP or press Space.';document.getElementById('r-start-btn').textContent='Play!';document.getElementById('r-tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];}if(id==='quiz')Quiz.load();if(id==='budget')Budget.load();if(id==='invest')Invest.load();if(id==='lessons')renderLessons();if(id==='profile')renderProfile();if(id==='leaderboard')LB.render();if(id==='home')updateHUD();}
+function addXP(amt){state.xp+=amt;const nl=Math.floor(state.xp/100)+1;if(nl>state.level){state.level=nl;toast(`🎉 Level Up! You're now Level ${nl}!`);}LB.submit('overall',state.xp);updateHUD();save();}
+function addCoins(amt){state.coins+=amt;updateHUD();save();}
+function addBadge(id){if(!state.badges.includes(id)){state.badges.push(id);save();}}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800);}
+function updateHUD(){const xe=document.getElementById('xp-val'),ce=document.getElementById('coin-val');if(xe)xe.textContent=state.xp;if(ce)ce.textContent=state.coins;const ll=document.getElementById('level-lbl'),xl=document.getElementById('xp-lbl'),xb=document.getElementById('xp-bar'),hg=document.getElementById('hero-greeting');if(ll)ll.textContent=`Level ${state.level} · ${TITLES[Math.min(state.level-1,TITLES.length-1)]}`;if(xl)xl.textContent=`${state.xp%100} / 100 XP`;if(xb)xb.style.width=`${state.xp%100}%`;if(hg)hg.textContent=`Welcome back, ${TITLES[Math.min(state.level-1,TITLES.length-1)]}!`;}
+function renderLessons(){const c=document.getElementById('lessons-body');c.innerHTML='';LESSONS.forEach(l=>{const d=document.createElement('div');d.className='lesson-card';d.innerHTML=`<h3>${l.title}</h3><p>${l.summary}</p><span class="lesson-tag">${l.tag}</span><div class="lesson-body" id="lb-${l.id}">${l.content.replace(/\n/g,'<br/>')}</div>`;d.onclick=()=>{const b=document.getElementById(`lb-${l.id}`);const open=b.classList.contains('open');document.querySelectorAll('.lesson-body').forEach(x=>x.classList.remove('open'));if(!open){b.classList.add('open');state.lessons++;addXP(5);addBadge('scholar');save();}};c.appendChild(d);});}
+function renderProfile(){const t=TITLES[Math.min(state.level-1,TITLES.length-1)];document.getElementById('p-name').textContent=t;document.getElementById('p-level').textContent=state.level;document.getElementById('p-xp').textContent=state.xp;document.getElementById('p-coins').textContent=state.coins;document.getElementById('p-streak').textContent=state.streak;document.getElementById('p-lessons').textContent=state.lessons;const g=document.getElementById('p-badges');g.innerHTML='';BADGES.forEach(b=>{const el=document.createElement('div');el.className='badge-card'+(state.badges.includes(b.id)?'':' locked');el.innerHTML=`<div class="bi">${b.icon}</div><div class="bn">${b.name}</div>`;g.appendChild(el);});}
+function save(){try{localStorage.setItem('tdFQ_m',JSON.stringify(state));}catch{}}
+function loadState(){try{const s=localStorage.getItem('tdFQ_m');if(s)state={...state,...JSON.parse(s)};}catch{}}
+// Floating coins on splash
+function initSplash(){const fc=document.getElementById('float-coins');if(!fc)return;const emojis=['💰','💵','💳','💎','🏦'];for(let i=0;i<12;i++){const span=document.createElement('span');span.className='coin';span.textContent=emojis[i%emojis.length];span.style.left=`${Math.random()*100}%`;span.style.animationDuration=`${6+Math.random()*6}s`;span.style.animationDelay=`${Math.random()*8}s`;span.style.fontSize=`${18+Math.random()*16}px`;fc.appendChild(span);}}
+document.addEventListener('DOMContentLoaded',()=>{loadState();updateHUD();LB.init();initSplash();});
+return{go,addXP,addCoins,addBadge};
+})();
+</script>
+</body>
+</html>

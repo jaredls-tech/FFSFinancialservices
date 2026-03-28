@@ -96,17 +96,27 @@ html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'S
 
 /* ── RUNNER ── */
 #screen-runner{background:#1a1a2e;overflow:hidden}
-#runner-canvas{width:100%;flex:1;display:block;touch-action:none}
+/* Rotated canvas wrapper — game renders landscape, displayed portrait */
+.runner-wrap{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+#runner-canvas{
+  display:block;touch-action:none;
+  transform-origin:center center;
+  transform:rotate(90deg);
+  /* actual dimensions set by JS after rotation */
+}
 .runner-overlay{position:absolute;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10;backdrop-filter:blur(8px)}
 .runner-overlay.gone{display:none}
 .runner-card{background:#fff;border-radius:var(--r);padding:28px 22px;width:88%;max-width:340px;text-align:center}
 .runner-card h2{font-size:24px;font-weight:800;color:var(--dark);margin-bottom:8px}
 .runner-card p{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px}
 .tip-card{background:var(--lgreen);border-left:4px solid var(--green);padding:12px 14px;border-radius:var(--rs);font-size:13px;color:var(--dgreen);margin-bottom:18px;text-align:left}
-/* Portrait jump button — full-width tap zone at bottom for easy thumb reach */
-.jump-zone{position:absolute;bottom:0;left:0;right:0;height:110px;z-index:5;display:flex;align-items:center;justify-content:center;cursor:pointer;background:linear-gradient(to top,rgba(0,166,81,.18),transparent)}
-.jump-zone-inner{width:120px;height:72px;border-radius:36px;background:linear-gradient(135deg,var(--green),var(--dgreen));color:#fff;font-size:18px;font-weight:800;border:3px solid rgba(255,255,255,.3);box-shadow:0 6px 24px rgba(0,166,81,.5);display:flex;align-items:center;justify-content:center;letter-spacing:.5px;pointer-events:none}
-.jump-zone:active .jump-zone-inner{transform:scale(.93);opacity:.9}
+/* Full-width jump zone at bottom */
+.jump-zone{position:absolute;bottom:0;left:0;right:0;height:110px;z-index:5;display:flex;align-items:center;justify-content:center;cursor:pointer;background:linear-gradient(to top,rgba(0,166,81,.22),transparent)}
+.jump-zone-inner{width:140px;height:68px;border-radius:34px;background:linear-gradient(135deg,var(--green),var(--dgreen));color:#fff;font-size:18px;font-weight:800;border:3px solid rgba(255,255,255,.3);box-shadow:0 6px 24px rgba(0,166,81,.5);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.jump-zone:active .jump-zone-inner{transform:scale(.93)}
 
 /* ── QUIZ ── */
 #screen-quiz{background:#f0f8f4}
@@ -332,16 +342,17 @@ html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'S
       <span class="gscore">❤️ <span id="r-lives">3</span></span>
     </div>
   </div>
-  <canvas id="runner-canvas"></canvas>
-  <div class="runner-overlay" id="runner-overlay">
-    <div class="runner-card">
-      <h2 id="r-title">Money Runner</h2>
-      <p id="r-msg">Collect coins, dodge debt traps!<br/>Tap anywhere below to jump.</p>
-      <div class="tip-card" id="r-tip"></div>
-      <button class="btn" id="r-start-btn" onclick="Runner.start()">Play!</button>
+  <div class="runner-wrap" id="runner-wrap">
+    <canvas id="runner-canvas"></canvas>
+    <div class="runner-overlay" id="runner-overlay">
+      <div class="runner-card">
+        <h2 id="r-title">Money Runner</h2>
+        <p id="r-msg">Collect coins, dodge debt traps!<br/>Tap anywhere below to jump.</p>
+        <div class="tip-card" id="r-tip"></div>
+        <button class="btn" id="r-start-btn" onclick="Runner.start()">Play!</button>
+      </div>
     </div>
   </div>
-  <!-- Full-width tap zone at bottom — easy thumb reach in portrait -->
   <div class="jump-zone" ontouchstart="Runner.jump()" onmousedown="Runner.jump()">
     <div class="jump-zone-inner">JUMP ↑</div>
   </div>
@@ -504,8 +515,31 @@ const Runner=(()=>{
 let cv,ctx,aid,state='idle',score,lives,dist,spd,fc,player,obs,coins,parts,gy;
 const OT=[{label:'DEBT',color:'#E53935',emoji:'💸',tip:'Debt costs you money through interest!'},{label:'SCAM',color:'#6A1B9A',emoji:'⚠️',tip:'Scams steal your money — never share your PIN!'},{label:'FEES',color:'#E65100',emoji:'🏦',tip:'Bank fees add up! Look for no-fee accounts.'},{label:'LOAN',color:'#B71C1C',emoji:'📄',tip:'Payday loans can charge 400%+ interest!'}];
 const CT=[{v:1,color:'#FFB300',r:7},{v:5,color:'#00A651',r:9},{v:10,color:'#1565C0',r:11}];
-function resize(){const r=cv.parentElement.getBoundingClientRect();cv.width=r.width;cv.height=r.height-110;gy=cv.height-60;}
-function init(){cv=document.getElementById('runner-canvas');ctx=cv.getContext('2d');resize();window.addEventListener('resize',resize);document.addEventListener('keydown',e=>{if(e.code==='Space')jump();});cv.addEventListener('touchstart',e=>{e.preventDefault();jump();},{passive:false});cv.addEventListener('mousedown',jump);}
+function resize(){
+  const wrap=document.getElementById('runner-wrap');
+  if(!wrap)return;
+  const ww=wrap.clientWidth;
+  const wh=wrap.clientHeight;
+  // Canvas renders landscape: width=wh, height=ww
+  // Then CSS rotates it 90deg to fill portrait
+  cv.width=wh;
+  cv.height=ww;
+  cv.style.width=wh+'px';
+  cv.style.height=ww+'px';
+  cv.style.marginLeft=((ww-wh)/2)+'px';
+  cv.style.marginTop=((wh-ww)/2)+'px';
+  gy=cv.height-80;
+}
+function init(){
+  cv=document.getElementById('runner-canvas');
+  ctx=cv.getContext('2d');
+  resize();
+  window.addEventListener('resize',resize);
+  document.addEventListener('keydown',e=>{if(e.code==='Space')jump();});
+  // Canvas tap also triggers jump (rotated, so any tap = jump)
+  cv.addEventListener('touchstart',e=>{e.preventDefault();jump();},{passive:false});
+  cv.addEventListener('mousedown',jump);
+}
 function reset(){score=0;lives=3;dist=0;spd=4;fc=0;player={x:60,y:gy-50,w:36,h:46,vy:0,og:true,inv:0};obs=[];coins=[];parts=[];hud();}
 function start(){if(state==='running')return;reset();state='running';document.getElementById('runner-overlay').classList.add('gone');if(aid)cancelAnimationFrame(aid);loop();}
 function quit(){state='idle';if(aid)cancelAnimationFrame(aid);App.go('home');}
